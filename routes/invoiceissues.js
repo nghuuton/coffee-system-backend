@@ -2,20 +2,24 @@ const router = require("express-promise-router")();
 const passport = require("passport");
 const passportConfig = require("../middlewares/passport");
 
-const invoiceController = require("../controllers/invoice");
+const invoiceIsuuesController = require("../controllers/invoiceissues");
 
 router
-    .route("/notpayment")
+    .route("/")
     .get(
         passport.authenticate("jwt", { session: false }),
-        invoiceController.getInoiveNotPayment
+        invoiceIsuuesController.getListInvoiceIssues
+    )
+    .post(
+        passport.authenticate("jwt", { session: false }),
+        invoiceIsuuesController.createNewInvoiceIssues
     );
 
 router
-    .route("/getChart")
+    .route("/:id")
     .post(
         passport.authenticate("jwt", { session: false }),
-        invoiceController.getChartInvoice
+        invoiceIsuuesController.importStore
     );
 
 module.exports = router;

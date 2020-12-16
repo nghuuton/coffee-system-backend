@@ -18,8 +18,8 @@ const comoditySchema = new Schema({
         required: true,
     },
     unit: {
-        type: String,
-        required: true,
+        type: Schema.Types.ObjectId,
+        ref: "ConvertionalUnit",
     },
     bySupplier: {
         type: Schema.Types.ObjectId,

@@ -12,4 +12,16 @@ const getInoiveNotPayment = async (req, res, next) => {
     }).populate("product._id");
     return res.status(200).json({ invoice, detailInvoice });
 };
-module.exports = { getInoiveNotPayment };
+
+const getChartInvoice = async (req, res, next) => {
+    const { start, end } = req.body;
+    const invoice = await Invoice.find({
+        createdAt: {
+            $gte: start ? new Date(start) : new Date(2020, 10, 30),
+            $lte: end ? new Date(end) : new Date(2090, 10, 30),
+        },
+    }).populate("detailInvoice");
+    return res.status(200).json(invoice);
+};
+
+module.exports = { getInoiveNotPayment, getChartInvoice };

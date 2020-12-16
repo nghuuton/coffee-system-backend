@@ -13,9 +13,7 @@ const productSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "Type",
     },
-    unit: {
-        type: String,
-    },
+    comoditys: [{ type: Schema.Types.ObjectId, ref: "Comdity" }],
     price: {
         type: Number,
         default: 0,

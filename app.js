@@ -31,29 +31,43 @@ const http = require("http");
 const Invoice = require("./models/Invoice");
 const DetailInvoice = require("./models/Detail_Invoice");
 const Table = require("./models/Table");
+const Staff = require("./models/Staff");
+const Account = require("./models/Account");
+const Comodity = require("./models/Comodity");
+const upload = require("./middlewares/uploadFile");
 const PORT = process.env.PORT;
 
 // * Middleware
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
+app.use(require("morgan")("dev"));
+app.use("/uploads", express.static("uploads"));
 
 // * Route
 app.use("/table", require("./routes/table"));
 app.use("/product", require("./routes/product"));
 app.use("/account", require("./routes/account"));
 app.use("/invoice", require("./routes/invoice"));
+app.use("/type", require("./routes/type"));
+app.use("/comodity", require("./routes/comodity"));
+app.use("/supplier", require("./routes/supplier"));
+app.use("/invoiceissues", require("./routes/invoiceissues"));
+// app.post("/upload", upload.single("xls"), async (req, res, next) => {
+//     console.log(req.file);
+// });
 
 // * Handler Error
-app.use((req, res, next) => {
-    const error = new Error("Not Found");
-    error.status = 500;
-    next(error);
-});
+// app.use((req, res, next) => {
+//     const error = new Error("Not Found");
+//     error.status = 500;
+//     next(error);
+// });
 
-app.use((err, req, res, next) => {
-    const error = process.env.ENV === "developer" ? err : {};
-    return res.status(error.status).json(error.message);
-});
+// app.use((err, req, res, next) => {
+//     const error = process.env.ENV === "developer" ? err : {};
+//     return res.status(error.status).json(error.message);
+// });
 
 // * Start Server
 const server = http.createServer(app);
@@ -92,10 +106,14 @@ io.on("connection", (socket) => {
         socket.emit("JOIN_ROOM_SUCCESS", "HELLO");
     });
 
+    socket.on("JOIN_ROOM_THUNGAN", () => {
+        socket.join("Thungan");
+        console.log("Đã join thu ngân");
+    });
+
     socket.on("NOTIFICATION", async (data) => {
         const { id, products, table, createBy, totalPayment, intoMoney } = data;
-        io.sockets.in(`Bếp`).emit("NOTIFICATION_SUCCESS", data);
-
+        socket.to(`Bếp`).emit("NOTIFICATION_SUCCESS", data);
         const product = products.map((item) => {
             return { quantity: item.quantity, _id: item._id };
         });
@@ -116,6 +134,7 @@ io.on("connection", (socket) => {
             createBy,
         });
         await newInvoice.save();
+        socket.to(`Thungan`).emit("NOTIFICATION_THU_NGAN_HAVE_NEW_TAB");
     });
 
     socket.on("SEND_TO_STAFF", (data) => {
@@ -124,7 +143,63 @@ io.on("connection", (socket) => {
             .emit("LISTEN_NOTIFICATION_FROM_KITCHEN", data.item);
     });
 
+    socket.on("NOTIFICATION_THU_NGAN", (data) => {
+        socket.to("Thungan").emit("NOTIFICATION_THU_NGAN_SUCCESS", data);
+    });
+
+    socket.on("PAYMENT_SUCCESS", async (data) => {
+        const invoice = await Invoice.findOne({
+            ownerTable: data.pane.table._id,
+            status: false,
+        });
+        invoice.status = true;
+        await invoice.save();
+        const detailInvoice = await DetailInvoice.findById(
+            invoice.detailInvoice
+        ).populate("product._id");
+        const { product } = detailInvoice;
+        const arrayIdComodity = product.map((item) => item._id.comoditys);
+        const quantity = product.map((item) => item.quantity);
+        for (let i = 0; i < arrayIdComodity.length; i++) {
+            const result = await Comodity.find({
+                _id: { $in: arrayIdComodity[i] },
+            }).populate("unit");
+            for (const item of result) {
+                item.quantity = item.quantity - quantity[i] / item.unit.unit;
+                await item.save();
+            }
+        }
+        await Table.findByIdAndUpdate(invoice.ownerTable, {
+            status: "Trống",
+        });
+        io.sockets.to(`${userArray[data.userId]}`).emit("LISTEN_FROM_THU_NGAN", data);
+    });
+
     socket.on("disconnect", () => {
         console.log(`Some one disconected ${socket.userId}`);
     });
 });
+
+// const newAccount = new Account({
+//     email: "admin@gmail.com",
+//     password: "123456",
+//     type: 0,
+// });
+
+// newAccount.save();
+
+// const newStaff = new Staff({
+//     firstname: "Rovice",
+//     lastname: "Coffee",
+//     birthday: new Date("1998-07-25"),
+//     sex: true,
+//     account: "5fd62853ae6e3102ec100bd2",
+// });
+
+// newStaff.save();
+
+// const test = async () => {
+
+// };
+
+// test();

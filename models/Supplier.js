@@ -9,14 +9,11 @@ const supplierSchema = new Schema({
     },
     address: {
         type: String,
-        unique: true,
         maxlength: 100,
-        required: true,
     },
     phone: {
         type: String,
         maxlength: 10,
-        required: true,
     },
 });
 

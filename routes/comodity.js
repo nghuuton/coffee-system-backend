@@ -2,20 +2,24 @@ const router = require("express-promise-router")();
 const passport = require("passport");
 const passportConfig = require("../middlewares/passport");
 
-const invoiceController = require("../controllers/invoice");
+const comodityController = require("../controllers/comodity");
 
 router
-    .route("/notpayment")
+    .route("/")
     .get(
         passport.authenticate("jwt", { session: false }),
-        invoiceController.getInoiveNotPayment
+        comodityController.getListComodity
     );
 
 router
-    .route("/getChart")
+    .route("/:id")
     .post(
         passport.authenticate("jwt", { session: false }),
-        invoiceController.getChartInvoice
+        comodityController.updateComodity
+    )
+    .delete(
+        passport.authenticate("jwt", { session: false }),
+        comodityController.removeComodity
     );
 
 module.exports = router;
