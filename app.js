@@ -53,6 +53,8 @@ app.use("/type", require("./routes/type"));
 app.use("/comodity", require("./routes/comodity"));
 app.use("/supplier", require("./routes/supplier"));
 app.use("/invoiceissues", require("./routes/invoiceissues"));
+app.use("/user", require("./routes/staff"));
+
 // app.post("/upload", upload.single("xls"), async (req, res, next) => {
 //     console.log(req.file);
 // });
@@ -112,17 +114,38 @@ io.on("connection", (socket) => {
     });
 
     socket.on("NOTIFICATION", async (data) => {
-        const { id, products, table, createBy, totalPayment, intoMoney } = data;
-        socket.to(`Bếp`).emit("NOTIFICATION_SUCCESS", data);
+        const { userId, products, table, createBy, totalPayment, intoMoney } = data;
+
+        const invoice = await Invoice.findOne({ status: false, ownerTable: table._id });
         const product = products.map((item) => {
             return { quantity: item.quantity, _id: item._id };
         });
-        const invoice = await Invoice.findOne({ status: false, ownerTable: table._id });
+
         if (invoice) {
             const detailInvoice = await DetailInvoice.findById(invoice.detailInvoice);
-            (detailInvoice.product = product),
-                (detailInvoice.totalPayment = totalPayment);
+            const newProducts = products.map((item, index) => {
+                return detailInvoice.product[index] &&
+                    detailInvoice.product[index]._id &&
+                    detailInvoice.product[index]._id == item._id
+                    ? {
+                          ...item,
+                          quantity: item.quantity - detailInvoice.product[index].quantity,
+                      }
+                    : { ...item };
+            });
+            detailInvoice.product = product;
+            detailInvoice.totalPayment = totalPayment;
             detailInvoice.intoMoney = intoMoney;
+            const newData = {
+                userId,
+                table,
+                createBy,
+                totalPayment,
+                intoMoney,
+                products: newProducts,
+            };
+            socket.to(`Bếp`).emit("NOTIFICATION_SUCCESS", newData);
+            socket.to(`Thungan`).emit("NOTIFICATION_THU_NGAN_HAVE_NEW_TAB");
             return await detailInvoice.save();
         }
         const newDetailInvoice = new DetailInvoice({ product, totalPayment, intoMoney });
@@ -134,6 +157,7 @@ io.on("connection", (socket) => {
             createBy,
         });
         await newInvoice.save();
+        socket.to(`Bếp`).emit("NOTIFICATION_SUCCESS", data);
         socket.to(`Thungan`).emit("NOTIFICATION_THU_NGAN_HAVE_NEW_TAB");
     });
 
