@@ -39,10 +39,12 @@ passport.use(
     new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
         try {
             const account = await Account.findOne({ email });
+            console.log(email, password);
             const result = await account.comparePassword(password);
             if (!account) done(null, false);
             if (!result) done(null, false);
             if (account) {
+                if (account.status === 1) return done(null, false);
                 const staff = await Staff.findOne({ account: account._id }).populate(
                     "account",
                     "type"

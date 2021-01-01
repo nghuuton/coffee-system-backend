@@ -2,7 +2,11 @@ const Staff = require("../models/Staff");
 const Account = require("../models/Account");
 
 const getListStaff = async (req, res, next) => {
-    const listStaff = await Staff.find({}).populate("account", ["email", "type"]);
+    const listStaff = await Staff.find({}).populate("account", [
+        "email",
+        "type",
+        "status",
+    ]);
     return res.status(200).json(listStaff);
 };
 
@@ -12,7 +16,11 @@ const updateTypeUser = async (req, res, next) => {
     const account = await Account.findByIdAndUpdate(staff.account, {
         type: data ? data : staff.account.type,
     });
-    const newStaff = await Staff.findById(id).populate("account", ["email", "type"]);
+    const newStaff = await Staff.findById(id).populate("account", [
+        "email",
+        "type",
+        "status",
+    ]);
     return res.status(200).json(newStaff);
 };
 
@@ -31,6 +39,7 @@ const createNewUser = async (req, res, next) => {
     const result = await Staff.findById(newStaff._id).populate("account", [
         "email",
         "type",
+        "status",
     ]);
     return res.status(200).json(result);
 };
@@ -38,9 +47,39 @@ const createNewUser = async (req, res, next) => {
 const removeUser = async (req, res, next) => {
     const { id } = req.params;
     const staff = await Staff.findById(id);
-    const account = await Account.findByIdAndRemove(staff.account);
-    await Staff.findByIdAndRemove(id);
-    return res.status(200).json({ success: true });
+    if (req.body.status === 1) {
+        const account = await Account.findByIdAndUpdate(staff.account, {
+            status: req.body.status,
+        });
+    }
+    if (req.body.status === 2) {
+        const account = await Account.findByIdAndRemove(staff.account);
+        await Staff.findByIdAndRemove(staff._id);
+    }
+    const listStaff = await Staff.find({}).populate("account", [
+        "email",
+        "type",
+        "status",
+    ]);
+
+    return res.status(200).json({ listStaff, status: req.body.status });
 };
 
-module.exports = { getListStaff, updateTypeUser, createNewUser, removeUser };
+const updateStatus = async (req, res, next) => {
+    await Account.findByIdAndUpdate(req.params.id, { status: 0 });
+    const listStaff = await Staff.find({}).populate("account", [
+        "email",
+        "type",
+        "status",
+    ]);
+
+    return res.status(200).json(listStaff);
+};
+
+module.exports = {
+    getListStaff,
+    updateTypeUser,
+    createNewUser,
+    removeUser,
+    updateStatus,
+};

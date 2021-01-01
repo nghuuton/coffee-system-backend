@@ -1,6 +1,7 @@
 const Product = require("../models/Product");
 const Type = require("../models/Type");
 const ConvertionalUnit = require("../models/ConvertionalUnit");
+const DetailInvoice = require("../models/Detail_Invoice");
 const Comodity = require("../models/Comodity");
 const fs = require("fs");
 const XLSX = require("xlsx");
@@ -18,14 +19,15 @@ const getInformation = async (req, res, next) => {
 
 const createProduct = async (req, res, next) => {
     const { name, price, comoditys, type } = req.body;
+    const newComodity = comoditys.split(",");
     const newProduct = new Product({
         name,
         price,
-        comoditys,
+        comoditys: newComodity,
         type,
         image: req.file ? `localhost:3001/${req.file.path}` : "",
     });
-    newProduct.save();
+    await newProduct.save();
     const result = await Product.findById(newProduct._id)
         .populate("type")
         .populate("comoditys");
@@ -55,12 +57,20 @@ const updateProduct = async (req, res, next) => {
 const removeProduct = async (req, res, next) => {
     const { id } = req.params;
     const product = await Product.findById(id);
-    if (product.image) {
-        const url = product.image && product.image.split("localhost:3001");
-        fs.unlinkSync(`.${url[1]}`);
+    if (product) {
+        const detailInvoice = await DetailInvoice.find({
+            "product._id": { $in: product._id },
+        });
+        if (detailInvoice.length > 0) return res.status(200).json({ success: false });
+        if (detailInvoice.length === 0) {
+            if (product.image) {
+                const url = product.image && product.image.split("localhost:3001");
+                fs.unlinkSync(`.${url[1]}`);
+            }
+            const result = await Product.findByIdAndRemove(id);
+            return res.status(200).json({ success: true });
+        }
     }
-    const result = await Product.findByIdAndRemove(id);
-    return res.status(200).json({ success: true });
 };
 
 const importExcel = async (req, res, next) => {

@@ -8,12 +8,12 @@ const getListComodity = async (req, res, next) => {
 };
 
 const updateComodity = async (req, res, next) => {
-    const { unitId, name, unit, price } = req.body;
+    const { unitId, name, unit, price, unitMath } = req.body;
     const { id } = req.params;
     if (unitId) {
         await ConvertionalUnit.findByIdAndUpdate(unitId, {
-            unit: unit.unit,
-            unitMath: unit.unitMath,
+            unit: unit,
+            unitMath: unitMath,
         });
         await Comodity.findByIdAndUpdate(id, {
             name,

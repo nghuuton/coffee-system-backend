@@ -6,12 +6,10 @@ const Product = require("../models/Product");
 
 const getListTable = async (req, res, next) => {
     let sortBy = req.query.order ? req.query.sortBy : "name";
-    let limit = req.query.limit ? parseInt(req.query.limit) : 10;
+    let limit = req.query.limit ? parseInt(req.query.limit) : 20;
     let skip = req.query.skip ? parseInt(req.query.skip) : 0;
-
     let byStatus = req.query.byStatus ? req.query.byStatus : { $ne: null };
-
-    const tables = await Table.find({ status: byStatus });
+    const tables = await Table.find({ status: byStatus }).skip(skip).limit(limit);
     return res.status(200).json(tables);
 };
 

@@ -4,12 +4,14 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const JWT = require("jsonwebtoken");
+const path = require("path");
+
 require("dotenv").config();
 
 // * Connecton Databse
 mongoose
     .connect(
-        process.env.ENV === "developer"
+        process.env.NODE_ENV === "developer"
             ? process.env.DATABASE_TEST
             : process.env.DATABASE,
         {
@@ -43,8 +45,10 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(require("morgan")("dev"));
 app.use("/uploads", express.static("uploads"));
+app.use(express.static("../client/build"));
 
 // * Route
+
 app.use("/table", require("./routes/table"));
 app.use("/product", require("./routes/product"));
 app.use("/account", require("./routes/account"));
@@ -55,6 +59,11 @@ app.use("/supplier", require("./routes/supplier"));
 app.use("/invoiceissues", require("./routes/invoiceissues"));
 app.use("/user", require("./routes/staff"));
 
+if (process.env.NODE_ENV === "production") {
+    app.get("/*", (req, res) => {
+        res.sendFile(path.resolve(__dirname, "../client", "build", "index.html"));
+    });
+}
 // app.post("/upload", upload.single("xls"), async (req, res, next) => {
 //     console.log(req.file);
 // });
@@ -115,23 +124,64 @@ io.on("connection", (socket) => {
 
     socket.on("NOTIFICATION", async (data) => {
         const { userId, products, table, createBy, totalPayment, intoMoney } = data;
-
         const invoice = await Invoice.findOne({ status: false, ownerTable: table._id });
         const product = products.map((item) => {
-            return { quantity: item.quantity, _id: item._id };
+            return { quantity: item.quantity, _id: item._id, status: item.status };
         });
 
         if (invoice) {
-            const detailInvoice = await DetailInvoice.findById(invoice.detailInvoice);
+            const detailInvoice = await DetailInvoice.findById(
+                invoice.detailInvoice
+            ).populate("product._id");
+            const detailProduct = detailInvoice.product;
             const newProducts = products.map((item, index) => {
-                return detailInvoice.product[index] &&
-                    detailInvoice.product[index]._id &&
-                    detailInvoice.product[index]._id == item._id
-                    ? {
-                          ...item,
-                          quantity: item.quantity - detailInvoice.product[index].quantity,
-                      }
-                    : { ...item };
+                if (
+                    !item.status &&
+                    detailProduct[index] &&
+                    detailProduct[index].quantity === item.quantity
+                ) {
+                    quantity = detailProduct[index].quantity - item.quantity;
+                }
+
+                // * TH1: Món chưa thông báo PASS
+                if (!item.status && !detailProduct[index]) {
+                    quantity = item.quantity;
+                }
+                // * TH2: Món đã thông báo nhưng chưa hoàn thành tự nhiên thêm số lượng
+                if (
+                    !item.status &&
+                    detailProduct[index] &&
+                    item.quantity > detailProduct[index].quantity
+                ) {
+                    quantity = item.quantity - detailProduct[index].quantity;
+                }
+                // * TH3: Món đã chế biến xong
+                if (
+                    item.status &&
+                    detailProduct[index] &&
+                    detailProduct[index].quantity === item.quantity
+                ) {
+                    quantity = item.quantity - detailProduct[index].quantity;
+                }
+                // * TH4: Đổi món
+                if (
+                    detailProduct[index] &&
+                    detailProduct[index]._id._id !== item._id &&
+                    detailProduct[index].quantity === item.quantity &&
+                    !item.status &&
+                    !detailProduct[index]._id
+                ) {
+                    quantity = item.quantity;
+                }
+
+                if (detailProduct[index] && detailProduct[index]._id.name !== item.name) {
+                    quantity = item.quantity;
+                }
+
+                return {
+                    ...item,
+                    quantity: quantity,
+                };
             });
             detailInvoice.product = product;
             detailInvoice.totalPayment = totalPayment;
@@ -144,7 +194,7 @@ io.on("connection", (socket) => {
                 intoMoney,
                 products: newProducts,
             };
-            socket.to(`Bếp`).emit("NOTIFICATION_SUCCESS", newData);
+            socket.to(`Bếp`).emit("QUANTITY_CHANGE", newData);
             socket.to(`Thungan`).emit("NOTIFICATION_THU_NGAN_HAVE_NEW_TAB");
             return await detailInvoice.save();
         }
@@ -161,7 +211,21 @@ io.on("connection", (socket) => {
         socket.to(`Thungan`).emit("NOTIFICATION_THU_NGAN_HAVE_NEW_TAB");
     });
 
-    socket.on("SEND_TO_STAFF", (data) => {
+    socket.on("SEND_TO_STAFF", async (data) => {
+        const invoice = await Invoice.findOne({
+            createBy: data.item.createBy,
+            status: false,
+        });
+        const detailInvoice = await DetailInvoice.findOne({ _id: invoice.detailInvoice });
+        const newProducts = detailInvoice.product.map((item, index) => {
+            return {
+                quantity: item.quantity,
+                _id: item._id,
+                status: true,
+            };
+        });
+        detailInvoice.product = newProducts;
+        await detailInvoice.save();
         io.sockets
             .to(`${userArray[data.id]}`)
             .emit("LISTEN_NOTIFICATION_FROM_KITCHEN", data.item);
@@ -199,10 +263,25 @@ io.on("connection", (socket) => {
         io.sockets.to(`${userArray[data.userId]}`).emit("LISTEN_FROM_THU_NGAN", data);
     });
 
+    socket.on("REPORT_TO_STAFF", (data) => {
+        const { table, item, event, userId } = data;
+        io.sockets.to(`${userArray[userId]}`).emit("LISTEN_FORM_REPORT", data);
+    });
+
     socket.on("disconnect", () => {
+        userArray[socket.userId] = "";
         console.log(`Some one disconected ${socket.userId}`);
     });
 });
+
+// const generatorTable = async () => {
+//     for (let i = 11; i <= 20; i++) {
+//         let newTable = new Table({ name: `Bàn ${i}`, status: "Bàn trống" });
+//         await newTable.save();
+//     }
+// };
+
+// generatorTable();
 
 // const newAccount = new Account({
 //     email: "admin@gmail.com",

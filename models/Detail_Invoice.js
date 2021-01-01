@@ -11,6 +11,10 @@ const Detail_Invoice_Schema = new Schema({
                 type: Number,
                 default: 1,
             },
+            status: {
+                type: Boolean,
+                default: false,
+            },
         },
     ],
     totalPayment: {

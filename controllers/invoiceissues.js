@@ -8,7 +8,8 @@ const getListInvoiceIssues = async (req, res, next) => {
     const listInvoiceIssues = await InvoiceIssues.find({})
         .populate("byStaff")
         .populate("bySupplier")
-        .populate("comoditys._id");
+        .populate("comoditys._id")
+        .sort([["createdAt", "desc"]]);
     return res.status(200).json(listInvoiceIssues);
 };
 
@@ -49,7 +50,8 @@ const createNewInvoiceIssues = async (req, res, next) => {
     const listInvoiceIssues = await InvoiceIssues.find({})
         .populate("byStaff")
         .populate("bySupplier")
-        .populate("comoditys._id");
+        .populate("comoditys._id")
+        .sort([["createdAt", "desc"]]);
     return res.status(200).json({ listInvoiceIssues, listComodity, listSupplier });
 };
 

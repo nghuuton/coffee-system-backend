@@ -20,8 +20,34 @@ const getChartInvoice = async (req, res, next) => {
             $gte: start ? new Date(start) : new Date(2020, 10, 30),
             $lte: end ? new Date(end) : new Date(2090, 10, 30),
         },
-    }).populate("detailInvoice");
+    })
+        .populate("detailInvoice")
+        .sort([["createdAt", "ASC"]]);
     return res.status(200).json(invoice);
 };
 
-module.exports = { getInoiveNotPayment, getChartInvoice };
+const getListInvoice = async (req, res, next) => {
+    const listInvoice = await Invoice.find({})
+        .populate("detailInvoice")
+        .populate("createBy")
+        .populate("ownerTable")
+        .sort([["createdAt", "desc"]]);
+    const listDetailInvoice = await DetailInvoice.find({}).populate("product._id");
+    return res.status(200).json({ listInvoice, listDetailInvoice });
+};
+
+const removeInvoice = async (req, res, next) => {
+    const { id } = req.params;
+    const invoice = await Invoice.findById(id);
+    await DetailInvoice.findByIdAndRemove(invoice.detailInvoice);
+    await Invoice.findByIdAndRemove(id);
+    const listInvoice = await Invoice.find({})
+        .populate("detailInvoice")
+        .populate("createBy")
+        .populate("ownerTable")
+        .sort([["createdAt", "desc"]]);
+    const listDetailInvoice = await DetailInvoice.find({}).populate("product._id");
+    return res.status(200).json({ listInvoice, listDetailInvoice });
+};
+
+module.exports = { getInoiveNotPayment, getChartInvoice, getListInvoice, removeInvoice };

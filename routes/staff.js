@@ -4,6 +4,8 @@ const passportConfig = require("../middlewares/passport");
 
 const staffController = require("../controllers/staff");
 
+const heplers = require("../middlewares/helpers");
+
 router
     .route("/")
     .get(passport.authenticate("jwt", { session: false }), staffController.getListStaff)
@@ -20,6 +22,14 @@ router
 
 router
     .route("/:id")
-    .post(passport.authenticate("jwt", { session: false }), staffController.removeUser);
+    .post(
+        passport.authenticate("jwt", { session: false }),
+        heplers.checkAccount,
+        staffController.removeUser
+    );
+
+router
+    .route("/updateStatus/:id")
+    .post(passport.authenticate("jwt", { session: false }), staffController.updateStatus);
 
 module.exports = router;
