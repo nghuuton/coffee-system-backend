@@ -37,7 +37,7 @@ const Staff = require("./models/Staff");
 const Account = require("./models/Account");
 const Comodity = require("./models/Comodity");
 const upload = require("./middlewares/uploadFile");
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 // * Middleware
 app.use(bodyParser.json());
