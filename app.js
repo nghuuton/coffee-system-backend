@@ -43,7 +43,7 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
-app.use(require("morgan")("dev"));
+// app.use(require("morgan")("dev"));
 app.use("/uploads", express.static("uploads"));
 app.use(express.static("./client/build"));
 
