@@ -21,8 +21,8 @@ const updateComodity = async (req, res, next) => {
         });
     } else {
         const newConver = new ConvertionalUnit({
-            unit: unit.unit,
-            unitMath: unit.unitMath,
+            unit: unit,
+            unitMath: unitMath,
         });
         await newConver.save();
         await Comodity.findByIdAndUpdate(id, {

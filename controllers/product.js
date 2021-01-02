@@ -7,6 +7,16 @@ const fs = require("fs");
 const XLSX = require("xlsx");
 
 const getListProduct = async (req, res, next) => {
+    const perPage = 12;
+    const { page } = req.query;
+    const start = (page - 1) * perPage;
+    const end = page * perPage;
+    const products = await Product.find({}).populate("type").populate("comoditys");
+    const result = products.slice(start, end);
+    return res.status(200).json({ result, length: products.length });
+};
+
+const getAllProduct = async (req, res, next) => {
     const result = await Product.find({}).populate("type").populate("comoditys");
     return res.status(200).json(result);
 };
@@ -104,4 +114,5 @@ module.exports = {
     getInformation,
     removeProduct,
     importExcel,
+    getAllProduct,
 };

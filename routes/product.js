@@ -15,6 +15,13 @@ router
     );
 
 router
+    .route("/getAll")
+    .get(
+        passport.authenticate("jwt", { session: false }),
+        productController.getAllProduct
+    );
+
+router
     .route("/")
     .get(
         passport.authenticate("jwt", { session: false }),

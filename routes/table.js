@@ -5,6 +5,13 @@ const passportConfig = require("../middlewares/passport");
 const tableController = require("../controllers/table");
 
 router
+    .route("/:id")
+    .post(
+        passport.authenticate("jwt", { session: false }),
+        tableController.updateStatusTable
+    );
+
+router
     .route("/")
     .get(passport.authenticate("jwt", { session: false }), tableController.getListTable)
     .post(

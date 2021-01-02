@@ -35,8 +35,16 @@ const getTableNotPayment = async (req, res, next) => {
     return res.status(200).json(result);
 };
 
+const updateStatusTable = async (req, res, next) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    await Table.findByIdAndUpdate(id, { status });
+    return res.status(200).json({ success: true, tableId: id, status });
+};
+
 module.exports = {
     getListTable,
     getInvoiceTable,
     getTableNotPayment,
+    updateStatusTable,
 };
