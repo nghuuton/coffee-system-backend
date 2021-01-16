@@ -5,6 +5,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const JWT = require("jsonwebtoken");
 const path = require("path");
+const fs = require("fs");
 require("dotenv").config();
 
 // * Connection Database
@@ -28,7 +29,7 @@ mongoose
   });
 
 // * Create Server
-const http = require("http");
+const https = require("https");
 const Invoice = require("./models/Invoice");
 const DetailInvoice = require("./models/Detail_Invoice");
 const Table = require("./models/Table");
@@ -85,7 +86,13 @@ if (process.env.NODE_ENV === "production") {
 // });
 
 // * Start Server
-const server = http.createServer(app);
+const server = https.createServer(
+  {
+    key: fs.readFileSync(path.join(__dirname, "cert", "key.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "cert", "cert.pem")),
+  },
+  app
+);
 
 server.listen(process.env.PORT, () => {
   console.log(`Sever start on PORT ${PORT}`);
@@ -93,7 +100,7 @@ server.listen(process.env.PORT, () => {
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: "http://coffee-sytem.herokuapp.com",
+    origin: "https://coffee-sytem.herokuapp.com",
   },
   transport: ["websocket"],
   upgrade: false,
