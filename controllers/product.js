@@ -60,7 +60,7 @@ const updateProduct = async (req, res, next) => {
       type: type,
       comoditys: comoditys.split(","),
       image: req.file
-        ? `coffee-sytem.herokuapp.com${req.file.path}`
+        ? `coffee-sytem.herokuapp.com/${req.file.path}`
         : product.image,
     },
     { new: true }
