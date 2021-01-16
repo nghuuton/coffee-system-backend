@@ -100,6 +100,11 @@ const importExcel = async (req, res, next) => {
     const comoditys = await Comodity.find({
       name: { $in: [...item["Hàng hoá"].split(", ")] },
     }).select("_id");
+    if (!type || comoditys.length < 0) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ success: false });
+    }
+
     const newProduct = new Product({
       name: item["Tên món"],
       price: item["Đơn giá"],
