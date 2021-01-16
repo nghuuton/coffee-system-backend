@@ -39,7 +39,7 @@ const createProduct = async (req, res, next) => {
     price,
     comoditys: newComodity,
     type,
-    image: req.file ? `localhost:3001/${req.file.path}` : "",
+    image: req.file ? `coffee-sytem.herokuapp.com/${req.file.path}` : "",
   });
   await newProduct.save();
   const result = await Product.findById(newProduct._id)
@@ -59,7 +59,9 @@ const updateProduct = async (req, res, next) => {
       price: Number(price),
       type: type,
       comoditys: comoditys.split(","),
-      image: req.file ? `localhost:3001/${req.file.path}` : product.image,
+      image: req.file
+        ? `coffee-sytem.herokuapp.com${req.file.path}`
+        : product.image,
     },
     { new: true }
   )
@@ -79,7 +81,8 @@ const removeProduct = async (req, res, next) => {
       return res.status(200).json({ success: false });
     if (detailInvoice.length === 0) {
       if (product.image) {
-        const url = product.image && product.image.split("localhost:3001");
+        const url =
+          product.image && product.image.split("coffee-sytem.herokuapp.com");
         fs.unlinkSync(`.${url[1]}`);
       }
       const result = await Product.findByIdAndRemove(id);
