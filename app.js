@@ -126,13 +126,13 @@ io.on("connection", (socket) => {
   console.log(userArray);
   socket.on("JOIN_ROOM", () => {
     socket.join("Bếp");
-    console.log("Đã join Room");
+    // console.log("Đã join Room");
     socket.emit("JOIN_ROOM_SUCCESS", "HELLO");
   });
 
   socket.on("JOIN_ROOM_THUNGAN", () => {
     socket.join("Thungan");
-    console.log("Đã join thu ngân");
+    // console.log("Đã join thu ngân");
   });
 
   socket.on("NOTIFICATION", async (data) => {

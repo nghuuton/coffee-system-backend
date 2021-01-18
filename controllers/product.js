@@ -39,7 +39,7 @@ const createProduct = async (req, res, next) => {
     price,
     comoditys: newComodity,
     type,
-    image: req.file ? `coffee-sytem.herokuapp.com/${req.file.path}` : "",
+    image: req.file ? `localhost:3001/${req.file.path}` : "",
   });
   await newProduct.save();
   const result = await Product.findById(newProduct._id)
@@ -52,6 +52,12 @@ const updateProduct = async (req, res, next) => {
   const { id } = req.params;
   const { name, price, comoditys, type } = req.body;
   const product = await Product.findById(id);
+  if (req.file) {
+    console.log(req.file.path);
+    const url = product.image.split("coffee-sytem.herokuapp.com/");
+    fs.unlinkSync(url[1]);
+  }
+
   const result = await Product.findByIdAndUpdate(
     id,
     {
@@ -83,7 +89,7 @@ const removeProduct = async (req, res, next) => {
       if (product.image) {
         const url =
           product.image && product.image.split("coffee-sytem.herokuapp.com");
-        fs.unlinkSync(`.${url[1]}`);
+        fs.unlinkSync(`${url[1]}`);
       }
       const result = await Product.findByIdAndRemove(id);
       return res.status(200).json({ success: true });
@@ -111,7 +117,7 @@ const importExcel = async (req, res, next) => {
       type,
       comoditys,
     });
-    newProduct.save();
+    await newProduct.save();
   }
   setTimeout(async () => {
     const result = await Product.find({})
