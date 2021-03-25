@@ -36,14 +36,25 @@ const Table = require("./models/Table");
 require("./models/Staff");
 require("./models/Account");
 const Comodity = require("./models/Comodity");
+const InvoiceIssues = require("./models/Invoice_Issue");
 // const upload = require("./middlewares/uploadFile");
 const PORT = process.env.PORT || 3001;
 
+// InvoiceIssues.findOne({})
+//   .populate("comoditys._id")
+//   .populate({
+//     path: "comoditys._id",
+//     populate: { path: "unit" },
+//   })
+//   .then((doc) => {
+//     console.log(doc.comoditys[0]._id.unit);
+//   });
+
 // * Middleware
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cors());
-// app.use(require("morgan")("dev"));
+app.use(require("morgan")("dev"));
 app.use("/uploads", express.static("uploads"));
 app.use(express.static("./client/build"));
 
@@ -63,11 +74,11 @@ app.use("/user", require("./routes/staff"));
 //   console.log(req.body);
 // });
 
-if (process.env.NODE_ENV === "production") {
-  app.get("/*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "./client/", "build", "index.html"));
-  });
-}
+// if (process.env.NODE_ENV === "production") {
+//   app.get("/*", (req, res) => {
+//     res.sendFile(path.resolve(__dirname, "./client/", "build", "index.html"));
+//   });
+// }
 
 // app.post("/upload", upload.single("xls"), async (req, res, next) => {
 //     console.log(req.file);
@@ -86,13 +97,7 @@ if (process.env.NODE_ENV === "production") {
 // });
 
 // * Start Server
-const server = http.createServer(
-  // {
-  //   key: fs.readFileSync(path.join(__dirname, "cert", "key.pem")),
-  //   cert: fs.readFileSync(path.join(__dirname, "cert", "cert.pem")),
-  // },
-  app
-);
+const server = http.createServer(app);
 
 server.listen(process.env.PORT, () => {
   console.log(`Sever start on PORT ${PORT}`);
@@ -100,10 +105,9 @@ server.listen(process.env.PORT, () => {
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: "http://coffee-sytem.herokuapp.com",
+    // origin: "*",
+    origins: "localhost:3000",
   },
-  transport: ["websocket"],
-  upgrade: false,
 });
 
 // * Socket IO
@@ -121,18 +125,18 @@ io.use(async (socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  // console.log(`Some one connected: ${socket.id}`);
+  console.log(`Some one connected: ${socket.id}`);
   userArray[socket.userId] = socket.id;
   console.log(userArray);
   socket.on("JOIN_ROOM", () => {
     socket.join("Bếp");
-    // console.log("Đã join Room");
+    console.log("Đã join Room");
     socket.emit("JOIN_ROOM_SUCCESS", "HELLO");
   });
 
   socket.on("JOIN_ROOM_THUNGAN", () => {
     socket.join("Thungan");
-    // console.log("Đã join thu ngân");
+    console.log("Đã join thu ngân");
   });
 
   socket.on("NOTIFICATION", async (data) => {
